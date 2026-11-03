@@ -1,0 +1,123 @@
+# EXAMPLE profile. Copy this file to config/profile.yaml and put your real details there.
+# config/profile.yaml is git-ignored, so your phone number and email never get committed.
+# Your master profile. JobPilot only ever reorders and selects from what is written here.
+# It never invents projects, numbers or skills. Edit this file when your experience changes.
+
+name: Chathur Buja Ram Bathi
+first_name: Chathur Buja Ram
+last_name: Bathi
+location: Gainesville, FL
+phone: "(000) 000-0000"
+email: you@example.com
+linkedin: https://www.linkedin.com/in/chathur-buja-ram-bathi-b5593a267
+github: ""
+
+# Used by the fit checker and the pre-fill helper.
+graduation: 2027-05            # YYYY-MM of your expected graduation
+available_from: 2027-05
+needs_sponsorship: true
+authorized_to_work_us: true
+willing_to_relocate: true
+max_years_experience: 1        # roles asking for more than this get a warning
+
+# Default summary, used when no tailoring applies.
+summary: >-
+  AI and ML Engineer skilled in building trustworthy machine learning systems: fine-tuning transformer
+  and deep learning models, building retrieval-augmented generation (RAG) pipelines, and making models
+  explainable, privacy-preserving, and robust to adversarial attacks. Proficient in Python, PyTorch,
+  Hugging Face, scikit-learn, and Docker.
+
+education:
+  - school: University of Florida
+    degree: M.S. in Artificial Intelligence Systems
+    dates: Aug 2025 – May 2027
+  - school: R.M.D. Engineering College, India
+    degree: B.Tech in Artificial Intelligence and Machine Learning (Honors)
+    dates: Nov 2021 – May 2025
+
+projects:
+  - id: fakenews
+    name: Explainable Fake News Detection with DistilBERT
+    tech: [PyTorch, Hugging Face, Streamlit]
+    themes: [NLP, transformers, fine-tuning, explainability, evaluation, content moderation, LLM]
+    bullets:
+      - text: "Achieved **99.80% accuracy and 0.998 F1**, beating a 97.85% TF-IDF + Logistic Regression baseline, by fine-tuning DistilBERT on the Kaggle Fake and Real News dataset."
+      - text: "Exposed shortcut learning, showing the model relied on style, emotional wording, and named entities rather than facts, by designing a perturbation-based word-level explainability method served through a Streamlit app."
+    story: >-
+      In my fake-news detection project I fine-tuned DistilBERT with PyTorch and Hugging Face and reached
+      99.80% accuracy and 0.998 F1, against a 97.85% TF-IDF and Logistic Regression baseline. I then built a
+      perturbation-based, word-level explanation method and found the model relied on writing style,
+      emotional wording, and named entities rather than facts.
+
+  - id: admitguide
+    name: "Admit-Guide: AI System for University Admission Guidance"
+    tech: [scikit-learn, SHAP, Docker, Gradio]
+    themes: [predictive modeling, classification, feature engineering, deployment, monitoring, Docker, MLOps, recommendation, explainability, fairness]
+    bullets:
+      - text: "Reached **88.89% mean 3-fold cross-validation accuracy** in predicting admission fit by engineering features from university requirements (CGPA, GRE, TOEFL/IELTS, acceptance rate) and training Logistic Regression and Random Forest classifiers."
+      - text: "Delivered explainable admission predictions and program recommendations through a Dockerized Gradio app by integrating SHAP explanations, fairness checks, a TF-IDF program search, and Prometheus/Grafana monitoring."
+    story: >-
+      In Admit-Guide I engineered features from university requirements and trained Logistic Regression and
+      Random Forest classifiers to 88.89% mean 3-fold cross-validation accuracy, then shipped the model in a
+      Dockerized Gradio app with SHAP explanations, fairness checks, and Prometheus/Grafana monitoring.
+
+  - id: privacy
+    name: Privacy and Adversarial Robustness Defense for Image Classifiers
+    tech: [PyTorch, WideResNet, CIFAR-10/100]
+    themes: [deep learning, computer vision, CNN, security, privacy, adversarial robustness, evaluation, trustworthy AI]
+    bullets:
+      - text: "Cut membership-inference attack advantage to **0.048 (near random guessing)** on CIFAR-100 and 0.052 on CIFAR-10, losing only about 5 points of accuracy, by designing a five-transformation input-defense ensemble (JPEG, bit-depth reduction, smoothing, median filtering) with temperature scaling."
+      - text: "Benchmarked the defense against 5 membership-inference attacks and FGSM/PGD adversarial attacks (**64.25% adversarial accuracy** on CIFAR-10) by building an evaluation pipeline and training a WideResNet-28-10 from scratch to 77.26% validation accuracy on CIFAR-100."
+    story: >-
+      In a team of four, I worked on a privacy and adversarial-robustness defense for image classifiers: a
+      five-transformation input-defense ensemble with temperature scaling that cut membership-inference attack
+      advantage to 0.048 on CIFAR-100, benchmarked against FGSM/PGD attacks, with a WideResNet-28-10 trained
+      from scratch in PyTorch.
+
+  - id: traffic
+    name: AI-Driven Adaptive Traffic Signal System
+    tech: [YOLOv8, OpenCV, Python]
+    themes: [computer vision, object detection, real-time, video, edge]
+    bullets:
+      - text: "Enabled automated violation enforcement and emergency-vehicle priority at intersections by building a real-time YOLOv8 and OpenCV pipeline that detects red-light jumping, over-speeding, and lane violations and adapts signal timing to traffic density."
+    story: >-
+      I built a real-time YOLOv8 and OpenCV pipeline that detects red-light jumping, over-speeding, and lane
+      violations and adapts traffic-signal timing to traffic density.
+
+experience:
+  - title: Artificial Intelligence Intern, Teachnook (Remote)
+    dates: Jan 2023 – Feb 2023
+    bullets:
+      - "Selected the best employee-attrition model by building and comparing Logistic Regression and Decision Tree classifiers."
+      - "Predicted cement compressive strength by developing and evaluating regression models."
+      - "Improved both models’ performance by applying exploratory data analysis, preprocessing, and hyperparameter tuning."
+
+skills:
+  Programming Languages: [Python, SQL, C, Java]
+  ML & Deep Learning: [PyTorch, TensorFlow, Keras, scikit-learn, WideResNet, CNNs, Transfer Learning, Random Forest]
+  NLP & LLMs: [Hugging Face Transformers, BERT/DistilBERT, RAG, FAISS, Sentence-Transformers, Ollama, TF-IDF]
+  Trustworthy AI: [Explainable AI (SHAP, perturbation analysis), Adversarial Robustness (FGSM, PGD), Membership Inference, Fairness]
+  Vision & Deployment: [YOLOv8, OpenCV, Docker, Streamlit, Gradio, Prometheus, Grafana, Pandas, NumPy, Git]
+
+research:
+  - name: Investigating Citation Hallucinations in LLMs with Retrieval-Augmented Generation
+    dates: Jan 2026 – May 2026
+    note: Research study, University of Florida (team of 4)
+    themes: [LLM, RAG, retrieval, evaluation, hallucination, NLP, embeddings, vector search]
+    bullets:
+      - text: "Reduced LLM citation hallucination from **100% to 12.34%** and raised retrieval grounding to 82.91%, by building a constrained RAG pipeline with a FAISS index over Sentence-Transformer embeddings and a locally hosted LLM (Ollama)."
+      - text: "Evaluated 510 medical research prompts against a 2,989-paper PubMed corpus by designing a citation verifier (exact and fuzzy title matching plus manual review) that labels each citation valid, partial, or hallucinated."
+    story: >-
+      In a four-person research project at UF, we built a constrained RAG pipeline (FAISS over
+      Sentence-Transformer embeddings with a locally hosted LLM through Ollama) and a citation verifier that
+      labels each citation valid, partial, or hallucinated. Across 510 prompts and a 2,989-paper corpus,
+      hallucinated citations fell from 100% to 12.34%.
+
+# Standard answers the pre-fill helper uses for common application questions.
+answers:
+  authorized_to_work: "Yes"
+  require_sponsorship: "Yes"
+  willing_to_relocate: "Yes"
+  start_date: "May 2027"
+  salary: "Negotiable"
+  how_did_you_hear: "Job board"

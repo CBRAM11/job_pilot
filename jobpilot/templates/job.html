@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card">
+  <div class="row" style="justify-content:space-between">
+    <div>
+      <h2 style="margin:0">{{ j.title }}</h2>
+      <div class="muted">{{ j.company }}{% if j.location %} · {{ j.location }}{% endif %}{% if j.url %} · <a href="{{ j.url }}" target="_blank" rel="noopener">posting</a>{% endif %}</div>
+    </div>
+    <div style="text-align:right"><span class="verdict {{ j.verdict }}" style="font-size:28px">{{ j.score }}</span><br><span class="verdict {{ j.verdict }}">{{ j.verdict }}</span></div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h3 style="margin-top:0">Fit check</h3>
+    {% if j.fit.blockers %}<b class="Skip">Rules it out</b><ul class="tight">{% for b in j.fit.blockers %}<li>{{ b }}</li>{% endfor %}</ul>{% endif %}
+    {% if j.fit.warnings %}<b class="Possible">Watch out</b><ul class="tight">{% for b in j.fit.warnings %}<li>{{ b }}</li>{% endfor %}</ul>{% endif %}
+    {% if j.fit.positives %}<b class="Strong">Good signs</b><ul class="tight">{% for b in j.fit.positives %}<li>{{ b }}</li>{% endfor %}</ul>{% endif %}
+    <p><b>You have</b><br>{% for s in j.fit.matched %}<span class="chip">{{ s }}</span>{% else %}<span class="muted">—</span>{% endfor %}</p>
+    <p><b>Gaps</b><br>{% for s in j.fit.missing %}<span class="chip">{{ s }}</span>{% else %}<span class="muted">none detected</span>{% endfor %}</p>
+    <form method="post" action="{{ url_for('rescore', job_id=j.id) }}"><button class="secondary">Re-check fit</button></form>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Documents</h3>
+    <form method="post" action="{{ url_for('tailor', job_id=j.id) }}" class="row">
+      <button>{{ 'Re-tailor' if j.resume_pdf else 'Tailor resume + cover letter' }}</button>
+      <label class="row" style="width:auto;gap:6px" title="{{ '' if ai else 'Add ANTHROPIC_API_KEY to .env to enable' }}">
+        <input type="checkbox" name="ai" value="1" style="width:auto" {{ '' if ai else 'disabled' }}> Use Claude {{ '' if ai else '(no API key)' }}
+      </label>
+    </form>
+    {% if j.resume_pdf %}
+      <p>Resume: <a href="{{ url_for('file', path=j.resume_pdf) }}" target="_blank">PDF</a> · <a href="{{ url_for('file', path=j.resume_docx, dl=1) }}">Word</a><br>
+      {% if j.cover_pdf %}Cover letter: <a href="{{ url_for('file', path=j.cover_pdf) }}" target="_blank">PDF</a> · <a href="{{ url_for('file', path=j.cover_docx, dl=1) }}">Word</a>{% endif %}</p>
+      <details><summary>What was changed and why</summary><ul class="tight">{% for n in (j.tailor_notes or '').split('\n') if n %}<li>{{ n }}</li>{% endfor %}</ul></details>
+    {% endif %}
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    <form method="post" action="{{ url_for('prefill_route', job_id=j.id) }}">
+      <button class="secondary">Open application and pre-fill</button>
+      <div class="muted" style="font-size:13px;margin-top:6px">Opens a browser window, fills your details and uploads the resume. It never clicks Submit.</div>
+    </form>
+    {% if prefill %}
+      <details open style="margin-top:10px"><summary>Last pre-fill</summary>
+        {% if prefill.filled %}<b>Filled</b><ul class="tight">{% for x in prefill.filled %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+        {% if prefill.uploaded %}<b>Uploaded</b><ul class="tight">{% for x in prefill.uploaded %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+        {% if prefill.needs_you %}<b class="Possible">Needs you</b><ul class="tight">{% for x in prefill.needs_you %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+      </details>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Status</h3>
+    <form method="post" action="{{ url_for('status', job_id=j.id) }}">
+      <select name="status">{% for s in statuses %}<option {{ 'selected' if s==j.status else '' }}>{{ s }}</option>{% endfor %}</select>
+      <p><input name="note" placeholder="Note (optional), e.g. 'OA link received'"></p>
+      <button>Update status</button>
+    </form>
+    <ul class="tight" style="margin-top:12px">{% for h in j.history|reverse %}<li><b>{{ h.status }}</b> <span class="muted">{{ h.at[:16].replace('T',' ') }}</span>{% if h.note %} — {{ h.note }}{% endif %}</li>{% endfor %}</ul>
+    <form method="post" action="{{ url_for('notes', job_id=j.id) }}" style="margin-top:12px">
+      <textarea name="notes" rows="4" placeholder="Recruiter names, interview dates, anything to remember">{{ j.notes or '' }}</textarea>
+      <p><button class="secondary">Save notes</button></p>
+    </form>
+  </div>
+</div>
+
+<div class="card"><details><summary><b>Job description</b></summary><pre class="jd">{{ j.description }}</pre></details></div>
+{% endblock %}

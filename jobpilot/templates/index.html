@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="row" style="justify-content:space-between;margin-bottom:12px">
+  <div class="chips">
+    <a class="chip" href="{{ url_for('index') }}">All active</a>
+    {% for s in statuses %}{% if counts.get(s) %}
+      <a class="chip" href="{{ url_for('index', status=s) }}"{% if status==s %} style="outline:2px solid var(--accent)"{% endif %}>{{ s }} · {{ counts[s] }}</a>
+    {% endif %}{% endfor %}
+  </div>
+  <div class="row">
+    <form method="post" action="{{ url_for('fetch') }}"><button>Fetch new jobs</button></form>
+    <a class="btn secondary" href="{{ url_for('add') }}">Add a job</a>
+  </div>
+</div>
+<div class="card" style="padding:0;overflow-x:auto">
+<table>
+  <tr><th>Fit</th><th>Role</th><th class="hide-sm">Location</th><th>Status</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td><span class="verdict {{ r.verdict }}">{{ r.score }}</span><br><span class="muted {{ r.verdict }}" style="font-size:12px">{{ r.verdict }}</span></td>
+    <td><a href="{{ url_for('job', job_id=r.id) }}"><b>{{ r.title }}</b></a><br><span class="muted">{{ r.company }}</span></td>
+    <td class="hide-sm muted">{{ r.location or '' }}</td>
+    <td>{{ r.status }}{% if r.applied_at %}<br><span class="muted" style="font-size:12px">applied {{ r.applied_at[:10] }}</span>{% endif %}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4" class="muted" style="padding:24px">No jobs yet. Click <b>Fetch new jobs</b> to check the companies in config/companies.yaml, or <b>Add a job</b> to paste one you found on LinkedIn or Handshake.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

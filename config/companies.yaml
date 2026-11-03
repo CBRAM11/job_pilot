@@ -1,0 +1,64 @@
+# Companies to watch. JobPilot reads their PUBLIC job-board APIs (Greenhouse, Lever, Ashby),
+# which these companies publish for exactly this purpose. It does not scrape LinkedIn or Handshake.
+#
+# How to find a company's board name: open its careers page and look at the job link.
+#   https://boards.greenhouse.io/<name>/...   or job-boards.greenhouse.io/<name>  -> greenhouse
+#   https://jobs.lever.co/<name>/...                                              -> lever
+#   https://jobs.ashbyhq.com/<name>/...                                           -> ashby
+# A wrong name is skipped with a warning; it won't stop the others.
+
+greenhouse:
+  - anthropic
+  - databricks
+  - scaleai
+  - figma
+  - stripe
+  - robinhood
+  - discord
+  - instacart
+  - pinterest
+  - airbnb
+
+lever:
+  - plaid
+  - palantir
+  - mistral
+
+ashby:
+  - brainco
+  - notion
+  - openai
+  - ramp
+  - cohere
+  - perplexity
+
+# Only titles matching one of these are kept (case-insensitive).
+include_titles:
+  - machine learning
+  - ml engineer
+  - " ai "
+  - ai engineer
+  - applied ai
+  - applied scientist
+  - data scientist
+  - nlp
+  - llm
+  - research engineer
+  - new grad
+  - university graduate
+  - early career
+
+# Titles matching any of these are dropped.
+exclude_titles:
+  - senior
+  - sr.
+  - staff
+  - principal
+  - lead
+  - manager
+  - director
+  - head of
+  - intern
+  - " ii"
+  - " iii"
+  - phd

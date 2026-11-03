@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card">
+  <h2 style="margin-top:0">Add a job</h2>
+  <p class="muted">Found a role on LinkedIn, Handshake, YC or anywhere else? Paste it here and JobPilot will check the fit.</p>
+  <form method="post">
+    <div class="grid">
+      <label>Company<input name="company" value="{{ form.get('company','') }}" required></label>
+      <label>Job title<input name="title" value="{{ form.get('title','') }}" required></label>
+      <label>Location<input name="location" value="{{ form.get('location','') }}"></label>
+      <label>Application link<input name="url" value="{{ form.get('url','') }}" placeholder="https://…"></label>
+    </div>
+    <p><label>Job description<textarea name="description" rows="16" required placeholder="Paste the full job description here">{{ form.get('description','') }}</textarea></label></p>
+    <button>Check fit</button>
+  </form>
+</div>
+{% endblock %}
