@@ -57,7 +57,27 @@ class ScoringTests(unittest.TestCase):
         for ceiling in ["Up to 2 years of internship or professional experience in software.",
                         "Less than 2 years of engineering experience.", "0-2 years of experience."]:
             r = score_job(job("AI Engineer", f"Python. {ceiling}"), P)
-            self.assertFalse(r.warnings + r.blockers, ceiling)
+            self.assertFalse([w for w in r.warnings + r.blockers if "years" in w], ceiling)
+
+    def test_unrelated_roles_are_not_strong(self):
+        for title, desc in [
+            ("AI Enablement Analyst", "Help teams adopt AI tools. Excel, SQL, Python. New grads welcome."),
+            ("AI Newsroom Developer Fellow", "Build tools for journalists using LLMs. JavaScript, Python. Recent graduates."),
+            ("Software Engineer - Data Fulfillment", "Build data pipelines in Java and SQL on AWS. Git. New grads welcome."),
+            ("Data Annotator - AI Training", "Label images for AI models. Python helpful."),
+        ]:
+            self.assertIn(score_job(job(title, desc), P).verdict, ("Weak", "Possible", "Skip"), title)
+
+    def test_real_ml_roles_rank_above_unrelated(self):
+        ml = score_job(job("Machine Learning Engineer, New Grad",
+                           "Train deep learning models in PyTorch, fine-tune transformers, build RAG, evaluate LLMs. Docker."), P)
+        analyst = score_job(job("AI Enablement Analyst", "Python and SQL. Help teams adopt AI."), P)
+        self.assertEqual(ml.verdict, "Strong")
+        self.assertGreater(ml.score, analyst.score + 30)
+
+    def test_core_skill_gaps_cap_at_possible(self):
+        r = score_job(job("Research Engineer - Inference", "Optimize LLM inference with vLLM, CUDA, Triton kernels; PyTorch; distributed training."), P)
+        self.assertNotEqual(r.verdict, "Strong")
 
     def test_skill_match_and_gaps(self):
         r = score_job(job("AI Engineer", "Python, PyTorch, RAG, Kubernetes, AWS. New grads welcome."), P)
@@ -144,6 +164,10 @@ class SourceTests(unittest.TestCase):
         self.assertTrue(title_matches("Machine Learning Engineer, New Grad", inc, exc))
         self.assertFalse(title_matches("Senior Machine Learning Engineer", inc, exc))
         self.assertFalse(title_matches("Account Executive", inc, exc))
+        self.assertFalse(title_matches("Software Engineer - Data Fulfillment", ["llm"], []))
+        self.assertTrue(title_matches("LLM Engineer", ["llm"], []))
+        self.assertFalse(title_matches("Machine Learning Engineer II", inc, ["ii"]))
+        self.assertTrue(title_matches("Machine Learning Engineer, Infrastructure", inc, ["ii"]))
 
     def test_html_to_text(self):
         self.assertEqual(html_to_text("<ul><li>A</li><li>B</li></ul>").split(), ["-", "A", "-", "B"])

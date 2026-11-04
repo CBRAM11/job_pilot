@@ -18,19 +18,29 @@ def create_app(tracker: Tracker | None = None) -> Flask:
     app = Flask(__name__)
     app.secret_key = "jobpilot-local-only"
     tr = tracker or Tracker()
+    pipeline.rescore_all(tr)  # apply the latest rules and your current profile to every job
 
     @app.get("/")
     def index():
         status = request.args.get("status") or None
         verdict = request.args.get("verdict") or None
+        show_all = request.args.get("all") == "1"
         q = (request.args.get("q") or "").strip()
         min_score = int(request.args.get("min") or 0)
         if q or min_score:
             rows = tr.search(q, min_score)
         else:
-            rows = tr.list(status=status, verdict=verdict, include_skipped=status == "Skipped")
-        return render_template("index.html", rows=rows, counts=tr.counts(), statuses=STATUSES,
-                               status=status, verdict=verdict, q=q, min_score=min_score)
+            rows = tr.list(status=status, verdict=verdict, include_skipped=status == "Skipped",
+                           good_only=not show_all)
+        return render_template("index.html", rows=rows, counts=tr.counts(), vcounts=tr.verdict_counts(),
+                               statuses=STATUSES, status=status, verdict=verdict, q=q, min_score=min_score,
+                               show_all=show_all)
+
+    @app.post("/rescore-all")
+    def rescore_all():
+        n = pipeline.rescore_all(tr)
+        flash(f"Re-checked {n} jobs against your current profile.")
+        return redirect(url_for("index"))
 
     @app.post("/discover")
     def discover():

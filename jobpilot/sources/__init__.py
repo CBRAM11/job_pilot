@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Callable
 
 import requests
@@ -19,11 +20,19 @@ FETCHERS: dict[str, Callable[[str, requests.Session], list[Job]]] = {
 }
 
 
+def _term(x: str) -> re.Pattern:
+    """Whole-word pattern for a filter term ('llm' must not match 'fulfillment')."""
+    x = x.strip().lower()
+    left = r"(?<![a-z0-9])" if x[:1].isalnum() else ""
+    right = r"(?![a-z0-9])" if x[-1:].isalnum() else ""
+    return re.compile(left + re.escape(x) + right)
+
+
 def title_matches(title: str, include: list[str], exclude: list[str]) -> bool:
-    t = f" {title.lower()} "
-    if any(x.lower() in t for x in exclude):
+    t = title.lower()
+    if any(_term(x).search(t) for x in exclude if x.strip()):
         return False
-    return any(x.lower() in t for x in include)
+    return any(_term(x).search(t) for x in include if x.strip())
 
 
 def fetch_all(companies: dict, session: requests.Session | None = None) -> tuple[list[Job], list[str]]:

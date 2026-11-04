@@ -110,6 +110,21 @@ US_ONLY = [
 ]
 SPONSOR_OK = [r"will sponsor", r"visa sponsorship (is )?available", r"sponsorship (is )?available", r"we sponsor", r"can help with that"]
 NEW_GRAD = [r"new grad", r"new college grad", r"university grad", r"recent grad", r"early career", r"entry[- ]level", r"campus", r"\b0\s*[-–]\s*[12]\+? years"]
+# How relevant the job TITLE is to an AI/ML engineering profile.
+CORE_TITLE = re.compile(r"machine learning|\bml\b|\bai\b.*\b(engineer|scientist|developer)\b|\b(engineer|scientist)\b.*\bai\b|"
+                        r"applied scien|research engineer|research scientist|deep learning|computer vision|\bnlp\b|\bllm|"
+                        r"natural language|perception|ai/ml|ml/ai|generative ai|genai", re.I)
+ADJACENT_TITLE = re.compile(r"data scien|software (engineer|developer)|software development engineer|\bsde\b|"
+                            r"forward deployed|data engineer|mlops|backend", re.I)
+UNRELATED_TITLE = re.compile(r"analyst|annotat|trainer|tutor|recruit|sales|marketing|account|product manager|"
+                             r"\bpm\b|designer|policy|operations|consultant|specialist|support|technician|"
+                             r"administrator|writer|editor|fellow\b|coordinator|associate(?! (ai|ml|machine|data|software))", re.I)
+# Skills that signal real ML work (not just "uses Python").
+ML_SKILLS = {"PyTorch", "TensorFlow", "Keras", "JAX", "scikit-learn", "Hugging Face", "Transformers", "LLMs", "RAG",
+             "Vector search", "Fine-tuning", "NLP", "Computer vision", "Deep learning", "Machine learning",
+             "Model evaluation", "Explainability", "Feature engineering", "Recommendation systems",
+             "Adversarial robustness", "Reinforcement learning", "Distributed training", "LLM serving (vLLM etc.)",
+             "AI agents", "Statistics"}
 SENIOR_TITLE = re.compile(r"\b(senior|sr\.?|staff|principal|lead|manager|director|head of|ii|iii|iv)\b", re.I)
 
 MONTHS = {m: i for i, m in enumerate(
@@ -288,8 +303,46 @@ def score_job(job: Job, profile: Profile) -> FitResult:
     matched = [s for s in asked if s in have]
     missing = [s for s in asked if s not in have]
 
-    base = 100 * len(matched) / max(1, len(matched) + len(missing)) if asked else 50
-    score = base + 8 * len([x for x in positives if "new grad" in x.lower() or "graduat" in x.lower()]) - 12 * len(warnings)
+    # 1) Is this an ML/AI role at all? (title)
+    strong_ml_title = re.search(r"machine learning|\bml\b|research (engineer|scientist)|applied scien|deep learning|computer vision", job.title, re.I)
+    if UNRELATED_TITLE.search(job.title) and not strong_ml_title:
+        role = 0.0
+        warnings.append(f"Title doesn't look like an ML/AI engineering role: {job.title}")
+    elif CORE_TITLE.search(job.title):
+        role = 1.0
+    elif ADJACENT_TITLE.search(job.title):
+        role = 0.55
+    else:
+        role = 0.3
+    # 2) How much real ML work does the description ask for?
+    ml_asked = [s for s in asked if s in ML_SKILLS]
+    depth = min(1.0, len(ml_asked) / 5)
+    if len(ml_asked) < 2:
+        warnings.append("Description asks for little or no machine learning work.")
+    # 3) How much of what they ask for do you have, weighted toward ML skills?
+    def weight(s: str) -> float:
+        return 2.0 if s in ML_SKILLS else 1.0
+    got = sum(weight(s) for s in matched)
+    want = sum(weight(s) for s in asked) or 1.0
+    coverage = got / want
+    # 4) Does it use your strongest areas?
+    strengths = {"LLMs", "RAG", "Transformers", "NLP", "Fine-tuning", "Deep learning", "Computer vision",
+                 "Explainability", "Model evaluation", "PyTorch", "Hugging Face", "scikit-learn"}
+    strength_hits = len(strengths & set(matched))
+    if strength_hits >= 3:
+        positives.append(f"Uses your strengths: {', '.join(s for s in matched if s in strengths)}")
+
+    score = 100 * (0.30 * role + 0.30 * depth + 0.30 * coverage + 0.10 * min(1.0, strength_hits / 3))
+    score += 5 * len([x for x in positives if "new grad" in x.lower() or "graduat" in x.lower()])
+    score -= 8 * len([w for w in warnings if "years" in w or "Graduation timing" in w])
+    if role == 0.0:
+        score = min(score, 35)
+    if len(ml_asked) < 2:
+        score = min(score, 50)  # without real ML work it can't be a strong fit for you
+    ml_gaps = [s for s in missing if s in ML_SKILLS]
+    if len(ml_gaps) >= 3 or (ml_asked and len(ml_gaps) / len(ml_asked) > 0.4):
+        warnings.append(f"Several core ML skills it asks for are gaps for you: {', '.join(ml_gaps)}")
+        score = min(score, 60)
     score = int(max(0, min(100, round(score))))
     if blockers:
         score = min(score, 20)

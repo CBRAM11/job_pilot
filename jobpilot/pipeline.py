@@ -90,6 +90,28 @@ def rescore(tracker: Tracker, job_id: int) -> dict:
     return fit.to_dict()
 
 
+def rescore_all(tracker: Tracker) -> int:
+    """Re-check every tracked job with the current rules and profile. Jobs you've already
+    acted on (Tailored, Applied, …) keep their status; untouched ones move between New and Skipped."""
+    profile = load_profile()
+    n = 0
+    for row in tracker.db.execute("SELECT id, status FROM jobs").fetchall():
+        full = tracker.get(row["id"])
+        job = Tracker.to_job(full)
+        fit = score_job(job, profile)
+        if "couldn't be fetched automatically" in job.description and fit.verdict != "Skip":
+            fit.verdict, fit.score = "Unchecked", min(fit.score, 40)
+        tracker.db.execute("UPDATE jobs SET score=?, verdict=?, fit=? WHERE id=?",
+                           (fit.score, fit.verdict, json.dumps(fit.to_dict()), row["id"]))
+        if row["status"] == "New" and fit.verdict == "Skip":
+            tracker.db.execute("UPDATE jobs SET status='Skipped' WHERE id=?", (row["id"],))
+        elif row["status"] == "Skipped" and fit.verdict != "Skip":
+            tracker.db.execute("UPDATE jobs SET status='New' WHERE id=?", (row["id"],))
+        n += 1
+    tracker.db.commit()
+    return n
+
+
 def tailor_job(tracker: Tracker, job_id: int, use_llm: bool = False, with_cover: bool = True) -> dict:
     row = tracker.get(job_id)
     if not row:

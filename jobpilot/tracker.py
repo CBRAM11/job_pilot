@@ -112,7 +112,9 @@ class Tracker:
             "SELECT status, note, at FROM history WHERE job_id=? ORDER BY id", (job_id,))]
         return d
 
-    def list(self, status: str | None = None, verdict: str | None = None, include_skipped: bool = False) -> list[dict]:
+    def list(self, status: str | None = None, verdict: str | None = None, include_skipped: bool = False,
+             good_only: bool = False) -> list[dict]:
+        """good_only: Strong/Possible jobs, plus anything you're already working on (Tailored, Applied, …)."""
         q, args = "SELECT id, company, title, location, score, verdict, status, url, updated_at, applied_at FROM jobs WHERE 1=1", []
         if status:
             q += " AND status=?"
@@ -122,6 +124,8 @@ class Tracker:
         if verdict:
             q += " AND verdict=?"
             args.append(verdict)
+        elif good_only and not status:
+            q += " AND (verdict IN ('Strong','Possible') OR status NOT IN ('New','Skipped'))"
         q += " ORDER BY CASE status WHEN 'Interviewing' THEN 0 WHEN 'Online assessment' THEN 1 WHEN 'Offer' THEN 0 ELSE 2 END, score DESC, id DESC"
         return [dict(r) for r in self.db.execute(q, args)]
 
@@ -139,6 +143,10 @@ class Tracker:
 
     def counts(self) -> dict[str, int]:
         return {r["status"]: r["n"] for r in self.db.execute("SELECT status, COUNT(*) n FROM jobs GROUP BY status")}
+
+    def verdict_counts(self) -> dict[str, int]:
+        return {r["verdict"]: r["n"] for r in self.db.execute(
+            "SELECT verdict, COUNT(*) n FROM jobs WHERE status!='Skipped' GROUP BY verdict")}
 
     @staticmethod
     def to_job(row: dict) -> Job:

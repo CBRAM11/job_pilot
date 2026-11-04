@@ -19,11 +19,16 @@
   </div>
 </div>
 <div class="chips" style="margin-bottom:12px">
-  <a class="chip" href="{{ url_for('index') }}">All active</a>
-  <a class="chip Strong" href="{{ url_for('index', verdict='Strong') }}"{% if verdict=='Strong' %} style="outline:2px solid var(--accent)"{% endif %}>Strong fits</a>
+  <a class="chip" href="{{ url_for('index') }}"{% if not (status or verdict or show_all or q or min_score) %} style="outline:2px solid var(--accent)"{% endif %}>Good fits</a>
+  <a class="chip Strong" href="{{ url_for('index', verdict='Strong') }}"{% if verdict=='Strong' %} style="outline:2px solid var(--accent)"{% endif %}>Strong · {{ vcounts.get('Strong', 0) }}</a>
+  {% for v in ['Possible', 'Weak', 'Unchecked'] %}{% if vcounts.get(v) %}
+    <a class="chip {{ v }}" href="{{ url_for('index', verdict=v) }}"{% if verdict==v %} style="outline:2px solid var(--accent)"{% endif %}>{{ v }} · {{ vcounts[v] }}</a>
+  {% endif %}{% endfor %}
+  <span class="muted" style="margin:0 6px">|</span>
   {% for s in statuses %}{% if counts.get(s) %}
     <a class="chip" href="{{ url_for('index', status=s) }}"{% if status==s %} style="outline:2px solid var(--accent)"{% endif %}>{{ s }} · {{ counts[s] }}</a>
   {% endif %}{% endfor %}
+  <a class="chip" href="{{ url_for('index', all=1) }}"{% if show_all %} style="outline:2px solid var(--accent)"{% endif %}>Show everything</a>
 </div>
 <div class="card" style="padding:0;overflow-x:auto">
 <table>

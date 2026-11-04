@@ -50,9 +50,10 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--file", help="text file with the job description (or paste it when asked)")
     a.add_argument("--url", default="")
     a.add_argument("--location", default="")
+    sub.add_parser("rescore", help="re-check every job against your current profile and rules")
     l = sub.add_parser("list")
     l.add_argument("--status", choices=STATUSES)
-    l.add_argument("--all", action="store_true", help="include skipped jobs")
+    l.add_argument("--all", action="store_true", help="include weak, unchecked and skipped jobs")
     s = sub.add_parser("show")
     s.add_argument("id", type=int)
     t = sub.add_parser("tailor")
@@ -92,6 +93,8 @@ def main(argv: list[str] | None = None) -> int:
             print("Strong matches:")
             for jid, co, title in res["strong"]:
                 print(f"  #{jid:<4} {co[:22]:<22} {title[:70]}")
+    elif args.cmd == "rescore":
+        print(f"Re-checked {pipeline.rescore_all(tracker)} jobs.")
     elif args.cmd == "search":
         for r in tracker.search(args.text, args.min):
             print(f"#{r['id']:<4} {r['score']:>3}  {r['verdict']:<9} {r['status']:<17} {r['company'][:18]:<18} {r['title'][:60]}")
@@ -104,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
         job_id, _ = pipeline.add_manual(tracker, args.company, args.title, desc, args.url, args.location)
         _print_fit(tracker.get(job_id))
     elif args.cmd == "list":
-        rows = tracker.list(status=args.status, include_skipped=args.all)
+        rows = tracker.list(status=args.status, include_skipped=args.all, good_only=not args.all)
         if not rows:
             print("Nothing here yet. Try `fetch` or `add`.")
         for r in rows:

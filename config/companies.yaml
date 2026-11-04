@@ -43,8 +43,11 @@ discover:
 include_titles:
   - machine learning
   - ml engineer
-  - " ai "
   - ai engineer
+  - ai software engineer
+  - ai/ml
+  - ml/ai
+  - ai research
   - applied ai
   - applied scientist
   - data scientist
@@ -73,6 +76,14 @@ exclude_titles:
   - " ii"
   - " iii"
   - phd
+  - analyst
+  - specialist
+  - consultant
+  - product manager
+  - marketing
+  - sales
+  - part-time
+  - evaluator
   - annotator
   - annotation
   - ai training
