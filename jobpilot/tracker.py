@@ -49,6 +49,16 @@ class Tracker:
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
 
+    def close(self) -> None:
+        """Release the database file (Windows keeps open files locked)."""
+        self.db.close()
+
+    def __enter__(self) -> "Tracker":
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self.close()
+
     # ---- writes ----
     def upsert(self, job: Job, fit: FitResult) -> tuple[int, bool]:
         """Insert a job, or refresh its score if already stored. Returns (id, is_new)."""

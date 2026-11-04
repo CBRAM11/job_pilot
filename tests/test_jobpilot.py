@@ -148,27 +148,30 @@ class SourceTests(unittest.TestCase):
 class TrackerTests(unittest.TestCase):
     def test_flow(self):
         with tempfile.TemporaryDirectory() as d:
-            t = Tracker(Path(d) / "t.db")
-            j = job("ML Engineer, New Grad", "Python, PyTorch")
-            jid, new = t.upsert(j, score_job(j, P))
-            self.assertTrue(new)
-            _, again = t.upsert(j, score_job(j, P))
-            self.assertFalse(again)
-            t.set_status(jid, "Applied", "via site")
-            row = t.get(jid)
-            self.assertEqual(row["status"], "Applied")
-            self.assertTrue(row["applied_at"])
-            self.assertEqual([h["status"] for h in row["history"]], ["New", "Applied"])
-            with self.assertRaises(ValueError):
-                t.set_status(jid, "Hired?")
+            with Tracker(Path(d) / "t.db") as t:
+                self._flow(t)
+
+    def _flow(self, t):
+        j = job("ML Engineer, New Grad", "Python, PyTorch")
+        jid, new = t.upsert(j, score_job(j, P))
+        self.assertTrue(new)
+        _, again = t.upsert(j, score_job(j, P))
+        self.assertFalse(again)
+        t.set_status(jid, "Applied", "via site")
+        row = t.get(jid)
+        self.assertEqual(row["status"], "Applied")
+        self.assertTrue(row["applied_at"])
+        self.assertEqual([h["status"] for h in row["history"]], ["New", "Applied"])
+        with self.assertRaises(ValueError):
+            t.set_status(jid, "Hired?")
 
     def test_skipped_hidden_by_default(self):
         with tempfile.TemporaryDirectory() as d:
-            t = Tracker(Path(d) / "t.db")
-            j = job("Senior ML Engineer", "Python")
-            t.upsert(j, score_job(j, P))
-            self.assertEqual(t.list(), [])
-            self.assertEqual(len(t.list(include_skipped=True)), 1)
+            with Tracker(Path(d) / "t.db") as t:
+                j = job("Senior ML Engineer", "Python")
+                t.upsert(j, score_job(j, P))
+                self.assertEqual(t.list(), [])
+                self.assertEqual(len(t.list(include_skipped=True)), 1)
 
 
 FORM = """<!doctype html><form onsubmit="document.body.dataset.sent='yes';return false">
