@@ -239,6 +239,11 @@ def years_check(text: str, max_years: int) -> tuple[list[str], list[str]]:
         low = int(m.group(1))
         if low > 15:  # "over 80 years of history" etc.
             continue
+        before = sent[max(0, m.start() - 25):m.start()].lower()
+        if re.search(r"(up to|less than|under|fewer than|no more than|at most|maximum of|<)\s*$", before):
+            continue  # a ceiling, not a requirement
+        if low == 0:
+            continue  # "0-2 years" welcomes new grads
         if low >= 3:
             blockers.append(f"Asks for {low}+ years of experience: “{sent.strip()[:140]}”")
         elif low > max_years:

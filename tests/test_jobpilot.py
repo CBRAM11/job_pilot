@@ -54,6 +54,10 @@ class ScoringTests(unittest.TestCase):
         self.assertEqual(score_job(job("ML Engineer", "5+ years of experience building ML systems. Python."), P).verdict, "Skip")
         w = score_job(job("ML Engineer", "2+ years of experience with Python and PyTorch."), P)
         self.assertTrue(w.warnings)
+        for ceiling in ["Up to 2 years of internship or professional experience in software.",
+                        "Less than 2 years of engineering experience.", "0-2 years of experience."]:
+            r = score_job(job("AI Engineer", f"Python. {ceiling}"), P)
+            self.assertFalse(r.warnings + r.blockers, ceiling)
 
     def test_skill_match_and_gaps(self):
         r = score_job(job("AI Engineer", "Python, PyTorch, RAG, Kubernetes, AWS. New grads welcome."), P)
