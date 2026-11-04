@@ -1,5 +1,7 @@
 """Command line:  python -m jobpilot <command>
 
+  discover [--limit 120]        search the public new-grad list + HN "Who is hiring?" for roles that fit you
+  search [TEXT] [--min 65]      search tracked jobs (e.g. search LLM --min 65)
   fetch                         pull new jobs from your companies.yaml boards and score them
   add  --company C --title T --file jd.txt [--url U]   add a job you found anywhere (LinkedIn, Handshake…)
   list [--status S] [--all]     show tracked jobs, best first
@@ -37,6 +39,11 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="jobpilot", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("fetch")
+    d = sub.add_parser("discover")
+    d.add_argument("--limit", type=int, default=120, help="max new jobs to fetch descriptions for")
+    se = sub.add_parser("search")
+    se.add_argument("text", nargs="?", default="")
+    se.add_argument("--min", type=int, default=0, help="minimum fit score")
     a = sub.add_parser("add")
     a.add_argument("--company", required=True)
     a.add_argument("--title", required=True)
@@ -69,6 +76,25 @@ def main(argv: list[str] | None = None) -> int:
         for w in res["warnings"]:
             print(f"  skipped board — {w}")
         print("Run `python -m jobpilot list` to see them.")
+    elif args.cmd == "discover":
+        print("Searching the new-grad list and HN 'Who is hiring?' (about a minute)…")
+        res = pipeline.discover(tracker, limit=args.limit)
+        print(f"New jobs added: {res['new']}")
+        if res.get("newgrad"):
+            s = res["newgrad"]
+            print(f"  New-grad list: {s['listed']} matching roles, {s['already_tracked']} already tracked, "
+                  f"{s['full_descriptions']} full descriptions fetched")
+        if res.get("hn"):
+            print(f"  HN Who is hiring: {res['hn']['matching_posts']} AI/ML posts")
+        for w in res["warnings"]:
+            print(f"  skipped — {w}")
+        if res["strong"]:
+            print("Strong matches:")
+            for jid, co, title in res["strong"]:
+                print(f"  #{jid:<4} {co[:22]:<22} {title[:70]}")
+    elif args.cmd == "search":
+        for r in tracker.search(args.text, args.min):
+            print(f"#{r['id']:<4} {r['score']:>3}  {r['verdict']:<9} {r['status']:<17} {r['company'][:18]:<18} {r['title'][:60]}")
     elif args.cmd == "add":
         if args.file:
             desc = open(args.file, encoding="utf-8").read()

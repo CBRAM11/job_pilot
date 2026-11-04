@@ -178,6 +178,100 @@ class TrackerTests(unittest.TestCase):
                 self.assertEqual(len(t.list(include_skipped=True)), 1)
 
 
+class DiscoverTests(unittest.TestCase):
+    """Discovery with the network faked: real code paths, canned API responses."""
+
+    class FakeResp:
+        def __init__(self, data):
+            self._d = data
+        def json(self):
+            return self._d
+        def raise_for_status(self):
+            pass
+
+    def session(self, routes):
+        outer = self
+        class S:
+            headers = {}
+            def get(self, url, **kw):
+                for key, data in routes.items():
+                    if key in url:
+                        return outer.FakeResp(data)
+                raise ConnectionError(url)
+        return S()
+
+    def test_newgrad_select_and_score(self):
+        import time
+        from jobpilot.sources import newgrad
+        now = time.time()
+        listings = [
+            {"id": "1", "company_name": "Acme AI", "title": "Machine Learning Engineer, New Grad", "active": True, "is_visible": True,
+             "date_posted": now, "url": "https://job-boards.greenhouse.io/acme/jobs/111", "locations": ["San Francisco, CA"],
+             "sponsorship": "Other", "degrees": ["Master's"]},
+            {"id": "2", "company_name": "Gov Co", "title": "AI Engineer", "active": True, "is_visible": True, "date_posted": now,
+             "url": "https://example.com/x", "locations": ["Arlington, VA"], "sponsorship": "U.S. Citizenship is Required", "degrees": []},
+            {"id": "3", "company_name": "UK Co", "title": "Machine Learning Engineer", "active": True, "is_visible": True,
+             "date_posted": now, "url": "https://example.com/y", "locations": ["London, UK"], "sponsorship": "Other", "degrees": []},
+            {"id": "4", "company_name": "Old Co", "title": "Machine Learning Engineer", "active": True, "is_visible": True,
+             "date_posted": now - 90 * 86400, "url": "https://example.com/z", "locations": ["Austin, TX"], "sponsorship": "Other", "degrees": []},
+            {"id": "5", "company_name": "Label Co", "title": "Data Annotator - AI Training", "active": True, "is_visible": True,
+             "date_posted": now, "url": "https://example.com/w", "locations": ["Remote in USA"], "sponsorship": "Other", "degrees": []},
+        ]
+        jd = "We build LLM products. Python, PyTorch, RAG, Docker. New grads welcome; graduating December 2026 - June 2027. " * 3
+        s = self.session({"listings.json": listings,
+                          "boards-api.greenhouse.io/v1/boards/acme/jobs/111": {"title": "ML Engineer, New Grad", "content": jd,
+                                                                               "location": {"name": "San Francisco, CA"}}})
+        from jobpilot.models import load_companies
+        cfg = load_companies()
+        jobs, stats = newgrad.fetch(cfg, s, known_keys=set())
+        self.assertEqual(sorted(j.company for j in jobs), ["Acme AI", "Gov Co"])
+        self.assertEqual(stats["full_descriptions"], 1)
+        by = {j.company: score_job(j, P) for j in jobs}
+        self.assertEqual(by["Gov Co"].verdict, "Skip")          # citizenship flag from the list
+        self.assertIn(by["Acme AI"].verdict, ("Strong", "Possible"))
+        # already-tracked jobs are not fetched again
+        again, stats2 = newgrad.fetch(cfg, s, known_keys={"newgrad:1", "newgrad:2"})
+        self.assertEqual(again, [])
+        self.assertEqual(stats2["already_tracked"], 2)
+
+    def test_detail_resolvers(self):
+        from jobpilot.sources import details
+        long = "<p>" + "Build ML systems with Python and PyTorch. " * 10 + "</p>"
+        s = self.session({
+            "api.lever.co/v0/postings/acme/abc": {"text": "AI Engineer", "descriptionPlain": long, "lists": [], "categories": {"location": "NYC"}},
+            "/wday/cxs/nvidia/NVIDIAExternalCareerSite/job/US-CA-Santa-Clara/ML-Engineer_JR1":
+                {"jobPostingInfo": {"title": "ML Engineer", "jobDescription": long, "location": "Santa Clara"}},
+            "apply.workable.com/api/v2/accounts/raydar/jobs/ABC123": {"title": "ML Engineer", "description": long, "location": {"city": "SF"}},
+            "api.smartrecruiters.com/v1/companies/LinkedIn3/postings/744000": {"name": "Data Scientist",
+                "jobAd": {"sections": {"jobDescription": {"text": long}}}, "location": {"city": "Mountain View"}},
+            "api.ashbyhq.com/posting-api/job-board/quora": {"jobs": [{"id": "q1", "title": "MLE New Grad", "descriptionPlain": long, "location": "Remote"}]},
+        })
+        cases = {
+            "https://jobs.lever.co/acme/abc/apply": "AI Engineer",
+            "https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/US-CA-Santa-Clara/ML-Engineer_JR1": "ML Engineer",
+            "https://apply.workable.com/raydar/j/ABC123/": "ML Engineer",
+            "https://jobs.smartrecruiters.com/LinkedIn3/744000-data-scientist": "Data Scientist",
+            "https://jobs.ashbyhq.com/quora/q1/application": "MLE New Grad",
+        }
+        for url, title in cases.items():
+            got = details.fetch_description(url, s)
+            self.assertIsNotNone(got, url)
+            self.assertEqual(got[0], title)
+            self.assertIn("PyTorch", got[1])
+        self.assertIsNone(details.fetch_description("https://careers.example.com/job/1", s))
+
+    def test_hn_parse(self):
+        from jobpilot.sources import hn
+        c = {"id": 42, "text": "Acme Robotics | Machine Learning Engineer | San Francisco, CA | ONSITE | VISA<p>"
+                               "We train vision models in PyTorch for warehouse robots. New grads welcome. "
+                               "We sponsor visas. Apply: https://acme.example/jobs</p>"}
+        j = hn.parse_comment(c)
+        self.assertEqual(j.company, "Acme Robotics")
+        self.assertEqual(j.title, "Machine Learning Engineer")
+        self.assertEqual(j.apply_url, "https://acme.example/jobs")
+        self.assertIsNone(hn.parse_comment({"id": 1, "text": "Bakery | Pastry chef | Paris<p>" + "Croissants. " * 20}))
+
+
 FORM = """<!doctype html><form onsubmit="document.body.dataset.sent='yes';return false">
 <label for=a>First Name *</label><input id=a><label for=b>Last Name *</label><input id=b>
 <label for=c>Email *</label><input id=c type=email><label for=r>Resume/CV *</label><input id=r type=file>

@@ -8,7 +8,8 @@ A personal job-search assistant for AI/ML roles. It finds jobs that fit your pro
 
 | Step | What happens |
 |---|---|
-| **Find** | Pulls new postings from the public job-board APIs (Greenhouse, Lever, Ashby) of the companies in `config/companies.yaml`. You can also paste any job you found on LinkedIn, Handshake or YC. |
+| **Discover** | Searches beyond any fixed company list: the community-maintained [SimplifyJobs New-Grad list](https://github.com/SimplifyJobs/New-Grad-Positions) (~3,000 active roles, updated daily) and Hacker News' monthly *Who is hiring?* thread. It keeps recent US roles whose titles match your filters, fetches each full description (Greenhouse, Lever, Ashby, Workday, Workable, SmartRecruiters) and scores it against your profile. |
+| **Find** | Also pulls postings from the public job boards of the companies in `config/companies.yaml`. You can paste any job you found on LinkedIn, Handshake or YC. |
 | **Check fit** | Scores 0–100 and flags dealbreakers in plain language: *doesn't sponsor visas*, *requires US citizenship or clearance*, *graduation window excludes May 2027*, *asks for 3+ years*, *senior title*. Lists the skills you have and the gaps. |
 | **Tailor** | Reorders your projects by relevance, moves the skills the posting mentions to the front, rewrites the summary around the role, and adds the graduation line for new-grad roles. Outputs a one-page PDF (to upload) and a Word file (to edit), plus a cover letter. |
 | **Pre-fill** | Opens the application in a real browser, fills name, email, phone, LinkedIn and standard sponsorship and authorization questions, and uploads your resume and cover letter. Consent boxes, essays and CAPTCHAs are left for you. |
@@ -43,6 +44,8 @@ python -m jobpilot serve             # dashboard at http://127.0.0.1:5000  (easi
 Or from the command line:
 
 ```bash
+python -m jobpilot discover                                # search new-grad listings + HN for roles that fit you
+python -m jobpilot search LLM --min 65                     # search tracked jobs, strong fits only
 python -m jobpilot fetch                                   # check your companies for new jobs
 python -m jobpilot add --company Quora --title "ML Engineer, New Grad" --file jd.txt --url https://...
 python -m jobpilot list                                    # best fits first (skipped ones hidden; add --all)

@@ -1,16 +1,29 @@
 {% extends "base.html" %}
 {% block body %}
 <div class="row" style="justify-content:space-between;margin-bottom:12px">
-  <div class="chips">
-    <a class="chip" href="{{ url_for('index') }}">All active</a>
-    {% for s in statuses %}{% if counts.get(s) %}
-      <a class="chip" href="{{ url_for('index', status=s) }}"{% if status==s %} style="outline:2px solid var(--accent)"{% endif %}>{{ s }} · {{ counts[s] }}</a>
-    {% endif %}{% endfor %}
-  </div>
+  <form method="get" class="row" style="flex:1;min-width:260px">
+    <input name="q" value="{{ q }}" placeholder="Search jobs: e.g. LLM, computer vision, Seattle, remote" style="flex:1;min-width:180px">
+    <select name="min" style="width:auto">
+      {% for v,label in [(0,'Any fit'),(45,'Possible+'),(65,'Strong only')] %}
+        <option value="{{ v }}" {{ 'selected' if min_score==v else '' }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button class="secondary">Search</button>
+  </form>
   <div class="row">
-    <form method="post" action="{{ url_for('fetch') }}"><button>Fetch new jobs</button></form>
+    <form method="post" action="{{ url_for('discover') }}" onsubmit="this.querySelector('button').textContent='Searching… (about a minute)'">
+      <button title="Searches the public new-grad list and HN Who is hiring, then checks each job against your profile">Discover jobs</button>
+    </form>
+    <form method="post" action="{{ url_for('fetch') }}"><button class="secondary" title="Checks the companies in config/companies.yaml">Fetch my companies</button></form>
     <a class="btn secondary" href="{{ url_for('add') }}">Add a job</a>
   </div>
+</div>
+<div class="chips" style="margin-bottom:12px">
+  <a class="chip" href="{{ url_for('index') }}">All active</a>
+  <a class="chip Strong" href="{{ url_for('index', verdict='Strong') }}"{% if verdict=='Strong' %} style="outline:2px solid var(--accent)"{% endif %}>Strong fits</a>
+  {% for s in statuses %}{% if counts.get(s) %}
+    <a class="chip" href="{{ url_for('index', status=s) }}"{% if status==s %} style="outline:2px solid var(--accent)"{% endif %}>{{ s }} · {{ counts[s] }}</a>
+  {% endif %}{% endfor %}
 </div>
 <div class="card" style="padding:0;overflow-x:auto">
 <table>
@@ -23,7 +36,9 @@
     <td>{{ r.status }}{% if r.applied_at %}<br><span class="muted" style="font-size:12px">applied {{ r.applied_at[:10] }}</span>{% endif %}</td>
   </tr>
   {% else %}
-  <tr><td colspan="4" class="muted" style="padding:24px">No jobs yet. Click <b>Fetch new jobs</b> to check the companies in config/companies.yaml, or <b>Add a job</b> to paste one you found on LinkedIn or Handshake.</td></tr>
+  <tr><td colspan="4" class="muted" style="padding:24px">
+    {% if q or min_score %}No jobs match that search.{% else %}No jobs yet. Click <b>Discover jobs</b> to search new-grad listings and HN for roles that fit your profile, or <b>Add a job</b> to paste one you found.{% endif %}
+  </td></tr>
   {% endfor %}
 </table>
 </div>

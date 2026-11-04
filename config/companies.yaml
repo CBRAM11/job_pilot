@@ -32,6 +32,13 @@ ashby:
   - cohere
   - perplexity
 
+# Searching beyond the companies above (`python -m jobpilot discover` or the Discover button).
+discover:
+  newgrad_list: true      # SimplifyJobs New-Grad-Positions (GitHub, ~3,000 active roles, updated daily)
+  hn_whos_hiring: true    # Hacker News monthly "Who is hiring?" thread
+  days: 14                # only roles posted in the last N days
+  us_only: true
+
 # Only titles matching one of these are kept (case-insensitive).
 include_titles:
   - machine learning
@@ -44,9 +51,13 @@ include_titles:
   - nlp
   - llm
   - research engineer
-  - new grad
-  - university graduate
-  - early career
+  - computer vision
+  - deep learning
+  - software engineer, new grad
+  - software engineer new grad
+  - software engineer - new grad
+  - new grad software
+  - software development engineer i
 
 # Titles matching any of these are dropped.
 exclude_titles:
@@ -62,3 +73,10 @@ exclude_titles:
   - " ii"
   - " iii"
   - phd
+  - annotator
+  - annotation
+  - ai training
+  - ai trainer
+  - contributor
+  - recording
+  - tutor

@@ -29,6 +29,46 @@ def fetch_and_score(tracker: Tracker, companies_path: Path | None = None) -> dic
     return {"found": len(jobs), "new": new, "updated": updated, "warnings": warnings}
 
 
+def discover(tracker: Tracker, companies_path: Path | None = None, limit: int = 120) -> dict:
+    """Search beyond your company list: the public new-grad list and HN 'Who is hiring?'."""
+    import requests
+
+    from .sources import hn, newgrad
+
+    profile = load_profile()
+    cfg = load_companies(companies_path)
+    disc = cfg.get("discover", {}) or {}
+    session = requests.Session()
+    session.headers["User-Agent"] = "JobPilot/0.2 (personal job search tool)"
+    report: dict = {"new": 0, "strong": [], "warnings": []}
+    jobs = []
+    if disc.get("newgrad_list", True):
+        try:
+            found, stats = newgrad.fetch(cfg, session, tracker.keys(), limit=limit)
+            jobs += found
+            report["newgrad"] = stats
+        except Exception as exc:
+            report["warnings"].append(f"New-grad list: {exc}")
+    if disc.get("hn_whos_hiring", True):
+        try:
+            found = [j for j in hn.fetch(session) if j.key not in tracker.keys()]
+            jobs += found
+            report["hn"] = {"matching_posts": len(found)}
+        except Exception as exc:
+            report["warnings"].append(f"HN Who is hiring: {exc}")
+    for job in jobs:
+        fit = score_job(job, profile)
+        if "couldn't be fetched automatically" in job.description and fit.verdict != "Skip":
+            fit.verdict = "Unchecked"
+            fit.score = min(fit.score, 40)
+            fit.warnings.append("Full description not fetched: open the posting and paste it via 'Add a job' to check fit.")
+        jid, is_new = tracker.upsert(job, fit)
+        report["new"] += is_new
+        if fit.verdict == "Strong":
+            report["strong"].append((jid, job.company, job.title))
+    return report
+
+
 def add_manual(tracker: Tracker, company: str, title: str, description: str, url: str = "", location: str = "") -> tuple[int, dict]:
     job = Job(company=company, title=title, description=description, url=url, apply_url=url, location=location)
     fit = score_job(job, load_profile())

@@ -23,10 +23,29 @@ def create_app(tracker: Tracker | None = None) -> Flask:
     def index():
         status = request.args.get("status") or None
         verdict = request.args.get("verdict") or None
-        show_skipped = status == "Skipped"
-        rows = tr.list(status=status, verdict=verdict, include_skipped=show_skipped)
+        q = (request.args.get("q") or "").strip()
+        min_score = int(request.args.get("min") or 0)
+        if q or min_score:
+            rows = tr.search(q, min_score)
+        else:
+            rows = tr.list(status=status, verdict=verdict, include_skipped=status == "Skipped")
         return render_template("index.html", rows=rows, counts=tr.counts(), statuses=STATUSES,
-                               status=status, verdict=verdict)
+                               status=status, verdict=verdict, q=q, min_score=min_score)
+
+    @app.post("/discover")
+    def discover():
+        res = pipeline.discover(tr)
+        parts = [f"Discovered {res['new']} new jobs."]
+        if res.get("newgrad"):
+            s = res["newgrad"]
+            parts.append(f"New-grad list: {s['listed']} matching roles, {s['full_descriptions']} full descriptions fetched.")
+        if res.get("hn"):
+            parts.append(f"HN Who is hiring: {res['hn']['matching_posts']} AI/ML posts.")
+        if res["strong"]:
+            parts.append(f"{len(res['strong'])} strong matches.")
+        parts += res["warnings"]
+        flash(" ".join(parts))
+        return redirect(url_for("index", verdict="Strong") if res["strong"] else url_for("index"))
 
     @app.post("/fetch")
     def fetch():

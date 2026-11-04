@@ -125,6 +125,18 @@ class Tracker:
         q += " ORDER BY CASE status WHEN 'Interviewing' THEN 0 WHEN 'Online assessment' THEN 1 WHEN 'Offer' THEN 0 ELSE 2 END, score DESC, id DESC"
         return [dict(r) for r in self.db.execute(q, args)]
 
+    def keys(self) -> set[str]:
+        return {r["key"] for r in self.db.execute("SELECT key FROM jobs")}
+
+    def search(self, text: str, min_score: int = 0, include_skipped: bool = False) -> list[dict]:
+        like = f"%{text}%"
+        q = ("SELECT id, company, title, location, score, verdict, status, url, updated_at, applied_at FROM jobs "
+             "WHERE (title LIKE ? OR company LIKE ? OR description LIKE ? OR location LIKE ?) AND score >= ?")
+        if not include_skipped:
+            q += " AND status != 'Skipped'"
+        q += " ORDER BY score DESC, id DESC"
+        return [dict(r) for r in self.db.execute(q, (like, like, like, like, min_score))]
+
     def counts(self) -> dict[str, int]:
         return {r["status"]: r["n"] for r in self.db.execute("SELECT status, COUNT(*) n FROM jobs GROUP BY status")}
 
